@@ -1,10 +1,15 @@
+#include "stdafx.h"
+#include <iostream>
+#include "neuro.h"
 
 using namespace std;
+
+
+
 void main()
 {
-	Neural_network neuron;
+	n_net neuron;
 	neuron.start_learning();
-	neuron.finding();
 	system("pause");
 }
 
