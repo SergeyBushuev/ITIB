@@ -1,138 +1,113 @@
+#include "stdafx.h"
+#include "neuro.h"
+#include <cmath>
+#include <bitset>
+#include <iostream>
+
 using namespace std;
 
-bool Neural_network::logisticAF(double net)
+
+bool n_net::learning()
 {
-	if (func(net) >= 0.5) {
-		return 1;
-	} else {
-		return 0;
-	}
-}
-
-double Neural_network::func(double net)
-{
-	return 0.5*(tanh(net) + 1);
-}
-double Neural_network::d_func(double net)
-{
-	return 2 / (pow((std::exp(net) + std::exp(-net)), 2));
-}
-
-
-
-double Neural_network::sum(int j, vector<double> & w, int n)
-{
-	std::bitset<16> bit(j);
-	double net = 0;
-	for (int i = 0; i < n; i++)
-		net += w[i] * bit[i];
-	net += w[n]; 
-	return net;
-}
-
-
-bool Neural_network::learning(vector<tuple<int, bool>> & examples, vector <double> & w)
-{
-	cout << "learning starts\n";
-	double net;
-	double delta;
-	bool y; 
-	int epoch = 0, err = 1;
-	while (err != 0)
-	{	
-		if (epoch > 40) { 
-			return false;
+	cout << "learning stars";
+	int epoch = 0;
+	int E = 0;
+	double dw;
+	for (size_t i =0; i < B.size(); i++)
+	{
+		if (B[i] != Y[i]) {
+			E++;
+			miss[i] = 1;
 		}
-		err = 0;
-		cout << "epoch " << epoch << ":   ";
-
-		vector<double> w_start = w;
-
-		for (int j = 0; j < examples.size(); j++)
+		else {
+			miss[i] = 0;
+		}
+	}
+	bool flag = false;
+	while (flag != true) {
+		if (epoch > 40) return false;
+		cout << "epoch #" << epoch << " start \n";
+		E = 0;
+		for (size_t l = 0; l < examples.size(); l++)
 		{
-			net = sum(get<0>(examples[j]), w, _n);
-			y = logisticAF(net);
-			cout << logisticAF(sum(get<0>(examples[j]), w_start, _n)) << " ";
-
-			if (y != get<1>(examples[j]))
+			for (size_t i = 0; i < examples[l].size(); i++)
 			{
-				err++;
-				std::bitset <16> bit(j);
+				dw = n * miss[l] * d_func(net(l)) * examples[l][i];
+				w[i] = w[i] + dw;
+			}
 
-				for (int i = 0; i < _n; i++)  
-				{
-					delta = _norma * (get<1>(examples[j]) - y) * bit[i] * d_func(net);
-					w[i] = w[i] + delta;
-				}
-				w[_n] = w[_n] + _norma * (get<1>(examples[j]) - y) * d_func(net); 
+		}
 
+		for (size_t l = 0; l < examples.size(); l++) {
+			Y[l] = logisticAF(net(l));
+
+			if (B[l] != Y[l]) {
+				E++;
+				miss[l] = 1;
+			}
+			else {
+				miss[l] = 0;
 			}
 		}
-
-		cout << " E = " << err << " w(";
-		for (int i = _n; i > 0; i--) cout << w_start[i] << ",";
-		cout << w_start[0] << ")" << endl;
+		cout << "Epoch = " << epoch << "; ";
+		print(w);
+		print(Y);
+		if (E == 0) flag = true;
 		epoch++;
 	}
 	return true;
 }
 
-
-void Neural_network::finding()
+void n_net::print(vector<int> v)
 {
-	_min = _examples;
-	less(_examples);
-	cout << "\n\nminimal combination is\n\n";
-	for (auto & ex : _min)
-		cout << get<0>(ex) << " -> " << get<1>(ex) << endl;
-}
-
-void Neural_network::less(vector<tuple<int, bool>> & examples)
-{
-	for (int i = examples.size() - 1; i >= 0; i--)
+	cout << "Y = {";
+	for (size_t i = 0; i < v.size(); i++)
 	{
-		vector<double> local_weights = this->_w;
-		vector<tuple<int, bool>> local_examples = examples;
-		local_examples.erase(local_examples.begin() + i);
-
-		_success = learning(local_examples, local_weights);
-
-		if (_success)
-			for (auto & ex : _examples)
-			{
-				bool y = logisticAF(sum(get<0>(ex), local_weights, _n)); //  !!!
-				if (y != get<1>(ex))
-				{
-					_success = false; break;
-				}
-			}
-
-		if (_success)
-		{
-			if (local_examples.size() <= _min.size())
-				_min = local_examples;
-			less(local_examples);
-		}
+		cout << v[i] << ", ";
 	}
+	cout << "} \n";
 }
 
-void Neural_network::start_learning()
+void n_net::print(vector<double> v)
 {
-	vector<double> weights = this->_w;
-	learning(this->_examples, weights);
-}
-
-Neural_network::Neural_network()
-{
-	for (int i = 0; i <= _n; i++)
-		_w.push_back(0);
-	for (int i = 0; i < 16; i++)
+	cout << "W = {";
+	for (size_t i = 0; i < v.size(); i++)
 	{
-		if (i != 5 && i != 6 && i != 7) {
-			_examples.push_back(tuple<int, bool>(i, 1));
-		}
-		else {
-			_examples.push_back(tuple<int, bool>(i, 0));
-		}
+		cout << v[i] << ", ";
 	}
+	cout << "} \n";
+}
+
+void n_net::start_learning()
+{
+	learning();
+}
+
+double n_net::net(int l)
+{
+	double sum = 0;
+	for (size_t i = 1; i < 4; i++)
+	{
+		sum = w[i] * examples[l][i] + w[0];
+	}
+	return sum;
+}
+
+bool n_net::AF(double net)
+{
+	return (net >= 0) ? 1 : 0;
+}
+
+bool n_net::logisticAF(double net)
+{
+	return (func(net) >= 0.5) ? 1 : 0;
+}
+
+double n_net::func(double net)
+{
+	return 0.5*(tanh(net) + 1);
+}
+double n_net::d_func(double net)
+{
+	return 2 / (pow((std::exp(net) + std::exp(-net)), 2));
 }
