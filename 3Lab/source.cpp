@@ -14,7 +14,7 @@ int main(int argc, char *argv[]) {
 	{ 1,1,0,0 },{ 1,1,0,1 },{ 1,1,1,0 },{ 1,1,1,1 } }; // Все комбинации вектора Х
 
 	n_net neur;
-	neur.study(min1);
+	neur.study(study_vectors);
 
 	int pause;
 	std::cin >> pause;
